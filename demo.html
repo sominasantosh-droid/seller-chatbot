@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Amazon SP-API MCP Server · Interactive Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&family=Raleway:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  /* Light Mode Theme */
+  --amazon-orange:  #FF9900;
+  --amazon-orange2: #e68a00;
+  --squid-ink:      #131A22;
+  --bg-main:        #FFFFFF;
+  --bg-secondary:   #F7F8FA;
+  --bg-tertiary:    #FAFBFC;
+  --text-primary:   #131A22;
+  --text-secondary: #565959;
+  --text-dim:       #888888;
+  --border:         #E0E0E0;
+  --border-light:   #EEEEEE;
+  --green:          #067D62;
+  --red:            #D13212;
+  --blue:           #0073BB;
+  --purple:         #8B46FF;
+  --shadow:         rgba(0,0,0,0.08);
+  --shadow-lg:      rgba(0,0,0,0.12);
+}
+html,body{height:100%;overflow:hidden;}
+body{
+  background: var(--bg-main);
+  font-family: 'Source Sans 3', 'Amazon Ember', sans-serif;
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── HEADER ── */
+.header{
+  background: var(--squid-ink);
+  border-bottom: 3px solid var(--amazon-orange);
+  padding: 0 28px;
+  height: 56px;
+  display: flex; align-items: center; gap: 14px;
+  flex-shrink: 0;
+}
+.header-logo{display: flex; align-items: center; gap: 10px;}
+.header-logo .a-text{
+  font-family: 'Raleway', sans-serif;
+  font-size: 22px; font-weight: 800;
+  color: var(--amazon-orange);
+  letter-spacing: -0.02em;
+}
+.header-logo .a-smile{
+  font-size: 13px; color: var(--amazon-orange);
+}
+.header-divider{width:1px;height:24px;background:rgba(255,255,255,0.2);}
+.header-title{
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 14px; font-weight: 400;
+  color: rgba(255,255,255,0.85);
+}
+.header-badge{
+  margin-left: auto;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 4px 11px; border-radius: 4px;
+  background: var(--amazon-orange);
+  color: var(--squid-ink);
+  font-weight: 600;
+}
+
+/* ── GRID ── */
+.grid{
+  flex:1;
+  display:grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  overflow:hidden;
+  background: var(--bg-secondary);
+}
+.panel{
+  padding: 24px 22px 22px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  border-right: 2px solid var(--border-light);
+  background: var(--bg-main);
+  position: relative;
+}
+.panel:last-child{border-right: none;}
+.panel::before{
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(to right, transparent, rgba(255,153,0,0.3), transparent);
+}
+
+.panel-label{
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 8px;
+}
+.panel-label .dot{
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--amazon-orange);
+  box-shadow: 0 0 6px rgba(255,153,0,0.5);
+  animation: pulse 2.5s ease infinite;
+}
+
+/* ── COLUMN 1: CHAT ── */
+.robot-wrap{
+  display: flex; justify-content: center;
+  margin-bottom: 22px;
+  opacity: 0;
+  animation: fadeUp 0.5s ease 0.2s forwards;
+}
+.robot{
+  width: 80px; height: 80px;
+  background: linear-gradient(135deg, #FF9900 0%, #e68a00 100%);
+  border: 2px solid var(--amazon-orange);
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 38px;
+  position: relative;
+  box-shadow: 0 4px 12px var(--shadow);
+}
+.robot-status{
+  position: absolute; bottom: -4px; right: -4px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--green);
+  border: 3px solid var(--bg-main);
+  animation: pulse 2.5s ease infinite;
+}
+
+.chat-scroll{
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 4px;
+}
+.chat-scroll::-webkit-scrollbar{width: 5px;}
+.chat-scroll::-webkit-scrollbar-track{background: var(--bg-secondary);}
+.chat-scroll::-webkit-scrollbar-thumb{background: rgba(255,153,0,0.4); border-radius: 10px;}
+
+.bubble{
+  max-width: 82%;
+  padding: 12px 15px;
+  border-radius: 14px;
+  font-size: 13px; line-height: 1.6;
+  opacity: 0;
+  position: relative;
+}
+.bubble.user{
+  align-self: flex-end;
+  background: var(--amazon-orange);
+  color: var(--squid-ink);
+  border-bottom-right-radius: 4px;
+  animation: fadeLeft 0.35s ease forwards;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(255,153,0,0.25);
+}
+.bubble.bot{
+  align-self: flex-start;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+  animation: fadeRight 0.35s ease forwards;
+  color: var(--text-primary);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Timing for 14 chat messages over 15 seconds */
+.bubble.t1 { animation-delay: 0.5s; }
+.bubble.t2 { animation-delay: 1.5s; }
+.bubble.t3 { animation-delay: 2.8s; }
+.bubble.t4 { animation-delay: 4.2s; }
+.bubble.t5 { animation-delay: 5.5s; }
+.bubble.t6 { animation-delay: 6.8s; }
+.bubble.t7 { animation-delay: 8.0s; }
+.bubble.t8 { animation-delay: 9.2s; }
+.bubble.t9 { animation-delay: 10.2s; }
+.bubble.t10{ animation-delay: 11.0s; }
+.bubble.t11{ animation-delay: 11.8s; }
+.bubble.t12{ animation-delay: 12.5s; }
+.bubble.t13{ animation-delay: 13.2s; }
+.bubble.t14{ animation-delay: 14.5s; }
+
+.typing{
+  align-self: flex-start;
+  display: flex; gap: 5px; align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 14px; border-bottom-left-radius: 4px;
+  opacity: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.typing span{
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--amazon-orange);
+  animation: bounce 1s ease infinite;
+}
+.typing span:nth-child(2){ animation-delay: 0.15s; }
+.typing span:nth-child(3){ animation-delay: 0.3s; }
+
+/* Multiple typing indicators */
+.typing.t1 { animation: fadeRight 0.3s ease 1.0s forwards, fadeOut 0.2s ease 1.4s forwards; }
+.typing.t2 { animation: fadeRight 0.3s ease 3.5s forwards, fadeOut 0.2s ease 4.1s forwards; }
+.typing.t3 { animation: fadeRight 0.3s ease 6.0s forwards, fadeOut 0.2s ease 6.7s forwards; }
+.typing.t4 { animation: fadeRight 0.3s ease 8.8s forwards, fadeOut 0.2s ease 9.1s forwards; }
+.typing.t5 { animation: fadeRight 0.3s ease 10.8s forwards, fadeOut 0.2s ease 11.7s forwards; }
+.typing.t6 { animation: fadeRight 0.3s ease 13.8s forwards, fadeOut 0.2s ease 14.4s forwards; }
+
+/* ── COLUMN 2: STEPS ── */
+.steps-container{
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding-right: 8px;
+}
+.steps-container::-webkit-scrollbar{width: 5px;}
+.steps-container::-webkit-scrollbar-track{background: var(--bg-secondary);}
+.steps-container::-webkit-scrollbar-thumb{background: rgba(255,153,0,0.4); border-radius: 10px;}
+
+.step-card{
+  background: var(--bg-main);
+  border-radius: 10px;
+  padding: 13px 15px;
+  border: 1.5px solid var(--border);
+  position: relative;
+  opacity: 0;
+  transform: translateY(12px);
+  border-left: 4px solid transparent;
+  box-shadow: 0 2px 6px var(--shadow);
+}
+
+/* Step type colors with light backgrounds */
+.step-card.thinking{ 
+  border-left-color: var(--purple);
+  background: linear-gradient(to right, rgba(139,70,255,0.03), var(--bg-main));
+}
+.step-card.auth{ 
+  border-left-color: var(--green);
+  background: linear-gradient(to right, rgba(6,125,98,0.03), var(--bg-main));
+}
+.step-card.api{ 
+  border-left-color: var(--blue);
+  background: linear-gradient(to right, rgba(0,115,187,0.03), var(--bg-main));
+}
+.step-card.success{ 
+  border-left-color: var(--green);
+  background: linear-gradient(to right, rgba(6,125,98,0.05), var(--bg-main));
+}
+.step-card.transform{ 
+  border-left-color: var(--blue);
+  background: linear-gradient(to right, rgba(0,115,187,0.04), var(--bg-main));
+}
+.step-card.complete{ 
+  border-left-color: var(--amazon-orange);
+  background: linear-gradient(to right, rgba(255,153,0,0.05), var(--bg-main));
+}
+
+/* Synchronized animation delays - matched to chat timing */
+.step-card.s1 { animation: stepIn 0.4s ease 1.0s forwards; }
+.step-card.s2 { animation: stepIn 0.4s ease 1.8s forwards; }
+.step-card.s3 { animation: stepIn 0.4s ease 3.2s forwards; }
+.step-card.s4 { animation: stepIn 0.4s ease 4.0s forwards; }
+.step-card.s5 { animation: stepIn 0.4s ease 5.0s forwards; }
+.step-card.s6 { animation: stepIn 0.4s ease 5.8s forwards; }
+.step-card.s7 { animation: stepIn 0.4s ease 7.5s forwards; }
+.step-card.s8 { animation: stepIn 0.4s ease 9.5s forwards; }
+.step-card.s9 { animation: stepIn 0.4s ease 10.5s forwards; }
+.step-card.s10{ animation: stepIn 0.4s ease 12.0s forwards; }
+.step-card.s11{ animation: stepIn 0.4s ease 12.8s forwards; }
+.step-card.s12{ animation: stepIn 0.4s ease 13.5s forwards; }
+
+.step-header{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.step-num{
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255,153,0,0.12);
+  border: 1px solid rgba(255,153,0,0.25);
+  color: var(--amazon-orange);
+  flex-shrink: 0;
+}
+.step-icon{
+  font-size: 18px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.step-type{
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.step-duration{
+  margin-left: auto;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.step-title{
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.step-subtitle{
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.step-code{
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--amazon-orange);
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(255,153,0,0.06);
+  border: 1px solid rgba(255,153,0,0.12);
+  border-radius: 5px;
+}
+
+/* ── COLUMN 3: OUTCOMES ── */
+.outcomes{
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  justify-content: center;
+  flex: 1;
+}
+.outcome{
+  border-radius: 12px;
+  padding: 18px 18px 18px 22px;
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(14px);
+  box-shadow: 0 3px 10px var(--shadow);
+}
+.outcome.success{
+  background: rgba(6,125,98,0.06);
+  border: 2px solid rgba(6,125,98,0.25);
+  animation: slideIn 0.5s ease 14.8s forwards;
+}
+.outcome.error{
+  background: rgba(209,50,18,0.06);
+  border: 2px solid rgba(209,50,18,0.25);
+  animation: slideIn 0.5s ease 15.2s forwards;
+}
+.outcome-bar{
+  position: absolute; top: 0; left: 0; bottom: 0; width: 4px;
+  border-radius: 12px 0 0 12px;
+}
+.success .outcome-bar{ background: var(--green); }
+.error .outcome-bar{ background: var(--red); }
+
+.outcome-head{
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+}
+.outcome-indicator{
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.success .outcome-indicator{
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(6,125,98,0.6);
+  animation: pulse 2.5s ease infinite;
+}
+.error .outcome-indicator{
+  background: var(--red);
+  box-shadow: 0 0 6px rgba(209,50,18,0.6);
+  animation: pulse 2.5s ease 0.5s infinite;
+}
+.outcome-title{
+  font-family: 'Raleway', sans-serif;
+  font-size: 14px; font-weight: 700;
+  color: var(--text-primary);
+}
+.outcome-body{
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 11px;
+}
+.outcome-chip{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 5px;
+}
+.success .outcome-chip{
+  background: rgba(6,125,98,0.1);
+  border: 1px solid rgba(6,125,98,0.3);
+  color: var(--green);
+}
+.error .outcome-chip{
+  background: rgba(209,50,18,0.1);
+  border: 1px solid rgba(209,50,18,0.3);
+  color: var(--red);
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeLeft{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeRight{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeOut{to{opacity:0;height:0;padding:0;margin:0;overflow:hidden;}}
+@keyframes stepIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.55;transform:scale(0.8)}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">
+    <span class="a-text">amazon</span>
+    <span class="a-smile">↗</span>
+  </div>
+  <div class="header-divider"></div>
+  <div class="header-title">SP-API MCP Server · Seller Central Integration Demo</div>
+  <div class="header-badge">Live Demo</div>
+</div>
+
+<!-- GRID -->
+<div class="grid">
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- COLUMN 1: CHAT BOT VIEW -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="panel">
+    <div class="panel-label"><span class="dot"></span>User Prompt</div>
+    
+    <div class="robot-wrap">
+      <div class="robot">
+        🤖
+        <div class="robot-status"></div>
+      </div>
+    </div>
+
+    <div class="chat-scroll">
+      <div class="bubble user t1">I would like to sync my Shopify products to Amazon Seller Central</div>
+      <div class="typing t1"><span></span><span></span><span></span></div>
+      <div class="bubble bot t2">Great! Which Amazon marketplace would you like to list on?</div>
+      <div class="bubble user t3">US marketplace - amazon.com</div>
+      <div class="typing t2"><span></span><span></span><span></span></div>
+      <div class="bubble bot t4">Perfect. Would you like to sync all products or filter by category?</div>
+      <div class="bubble user t5">All products from my store, please</div>
+      <div class="typing t3"><span></span><span></span><span></span></div>
+      <div class="bubble bot t6">Understood. Connecting to your Shopify store now...</div>
+      <div class="bubble bot t7">Found 12 products in your catalog! Shall I proceed with syncing them to Amazon?</div>
+      <div class="bubble user t8">Yes, please proceed</div>
+      <div class="typing t4"><span></span><span></span><span></span></div>
+      <div class="bubble bot t9">I'm fetching Amazon's product requirements to ensure proper formatting...</div>
+      <div class="bubble bot t10">Converting your product data to Amazon's format now...</div>
+      <div class="typing t5"><span></span><span></span><span></span></div>
+      <div class="bubble bot t11">Ready to submit. Creating listings on Amazon Seller Central...</div>
+      <div class="bubble bot t12">Submitting 12 products to Amazon...</div>
+      <div class="typing t6"><span></span><span></span><span></span></div>
+      <div class="bubble bot t14">✅ Processing complete! 11 products listed successfully, 1 needs attention. Check the results panel →</div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- COLUMN 2: SEQUENTIAL OPERATIONS -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="panel">
+    <div class="panel-label"><span class="dot"></span>Agent Operations</div>
+    
+    <div class="steps-container">
+      
+      <!-- Step 1: Initial Thinking -->
+      <div class="step-card thinking s1">
+        <div class="step-header">
+          <span class="step-num">#1</span>
+          <span class="step-icon">🧠</span>
+          <span class="step-type">Agent Thinking</span>
+          <span class="step-duration">0.2s</span>
+        </div>
+        <div class="step-title">Analyzing user request</div>
+        <div class="step-subtitle">Triggered by: User message<br>→ Task: Sync Shopify products to Amazon marketplace</div>
+      </div>
+
+      <!-- Step 2: Marketplace Config -->
+      <div class="step-card thinking s2">
+        <div class="step-header">
+          <span class="step-num">#2</span>
+          <span class="step-icon">🌍</span>
+          <span class="step-type">Configuration</span>
+          <span class="step-duration">0.1s</span>
+        </div>
+        <div class="step-title">Marketplace configured</div>
+        <div class="step-subtitle">Target: US marketplace (amazon.com)<br>→ Setting region parameters for SP-API</div>
+      </div>
+
+      <!-- Step 3: Shopify Connection -->
+      <div class="step-card auth s3">
+        <div class="step-header">
+          <span class="step-num">#3</span>
+          <span class="step-icon">🔐</span>
+          <span class="step-type">Authentication</span>
+          <span class="step-duration">0.3s</span>
+        </div>
+        <div class="step-title">Connecting to Shopify store</div>
+        <div class="step-subtitle">Triggered by: User confirmed "all products"<br>→ Authenticating with Shopify MCP Server</div>
+        <div class="step-code">✓ Shopify Admin API connected</div>
+      </div>
+
+      <!-- Step 4: Fetch Products -->
+      <div class="step-card api s4">
+        <div class="step-header">
+          <span class="step-num">#4</span>
+          <span class="step-icon">📡</span>
+          <span class="step-type">API Call</span>
+          <span class="step-duration">0.9s</span>
+        </div>
+        <div class="step-title">Extracting product catalog from Shopify</div>
+        <div class="step-subtitle">Fetching all products, variants, images, and inventory data</div>
+        <div class="step-code">GET /admin/api/2024-01/products.json</div>
+      </div>
+
+      <!-- Step 5: Products Found -->
+      <div class="step-card success s5">
+        <div class="step-header">
+          <span class="step-num">#5</span>
+          <span class="step-icon">✅</span>
+          <span class="step-type">Data Retrieved</span>
+          <span class="step-duration">0.1s</span>
+        </div>
+        <div class="step-title">12 products retrieved successfully</div>
+        <div class="step-subtitle">Includes: 18 variants, 47 images, pricing for all SKUs<br>→ Data ready for Amazon integration</div>
+      </div>
+
+      <!-- Step 6: Schema Planning -->
+      <div class="step-card thinking s6">
+        <div class="step-header">
+          <span class="step-num">#6</span>
+          <span class="step-icon">🧠</span>
+          <span class="step-type">Agent Thinking</span>
+          <span class="step-duration">0.3s</span>
+        </div>
+        <div class="step-title">Determining Amazon requirements</div>
+        <div class="step-subtitle">Triggered by: User approved proceeding<br>→ Need to fetch product type schema from SP-API</div>
+      </div>
+
+      <!-- Step 7: Schema Fetch -->
+      <div class="step-card api s7">
+        <div class="step-header">
+          <span class="step-num">#7</span>
+          <span class="step-icon">📋</span>
+          <span class="step-type">Schema API</span>
+          <span class="step-duration">0.6s</span>
+        </div>
+        <div class="step-title">Fetching Amazon product type definitions</div>
+        <div class="step-subtitle">Retrieving required attributes, validations, and field mappings</div>
+        <div class="step-code">GET /definitions/2020-09-01/productTypes/PRODUCT</div>
+      </div>
+
+      <!-- Step 8: Data Transformation -->
+      <div class="step-card transform s8">
+        <div class="step-header">
+          <span class="step-num">#8</span>
+          <span class="step-icon">⚙️</span>
+          <span class="step-type">Transform</span>
+          <span class="step-duration">1.4s</span>
+        </div>
+        <div class="step-title">Converting data to Amazon format</div>
+        <div class="step-subtitle">Mapping Shopify fields → Amazon attributes<br>→ title, description, price, images, brand, category</div>
+      </div>
+
+      <!-- Step 9: Amazon Auth -->
+      <div class="step-card auth s9">
+        <div class="step-header">
+          <span class="step-num">#9</span>
+          <span class="step-icon">🔐</span>
+          <span class="step-type">Authentication</span>
+          <span class="step-duration">0.4s</span>
+        </div>
+        <div class="step-title">Authenticating with Amazon SP-API</div>
+        <div class="step-subtitle">Triggered by: User confirmed "create listings"<br>→ Using LWA (Login with Amazon) credentials</div>
+        <div class="step-code">✓ SP-API MCP Server authenticated</div>
+      </div>
+
+      <!-- Step 10: Submitting -->
+      <div class="step-card api s10">
+        <div class="step-header">
+          <span class="step-num">#10</span>
+          <span class="step-icon">🚀</span>
+          <span class="step-type">API Call</span>
+          <span class="step-duration">2.3s</span>
+        </div>
+        <div class="step-title">Submitting product listings to Amazon</div>
+        <div class="step-subtitle">Creating 12 listings in Amazon Seller Central catalog</div>
+        <div class="step-code">POST /listings/2021-08-01/items/{seller-sku}</div>
+      </div>
+
+      <!-- Step 11: Validation -->
+      <div class="step-card api s11">
+        <div class="step-header">
+          <span class="step-num">#11</span>
+          <span class="step-icon">🔍</span>
+          <span class="step-type">Validation</span>
+          <span class="step-duration">0.8s</span>
+        </div>
+        <div class="step-title">Amazon validating listings</div>
+        <div class="step-subtitle">Checking required attributes, pricing rules, and compliance<br>→ Processing submission results...</div>
+      </div>
+
+      <!-- Step 12: Complete -->
+      <div class="step-card complete s12">
+        <div class="step-header">
+          <span class="step-num">#12</span>
+          <span class="step-icon">🎉</span>
+          <span class="step-type">Complete</span>
+          <span class="step-duration">0.1s</span>
+        </div>
+        <div class="step-title">Operation complete</div>
+        <div class="step-subtitle">✓ 11 products listed successfully<br>⚠️ 1 product requires attention (missing brand)<br>→ View detailed outcomes in results panel</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- COLUMN 3: OUTCOMES -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="panel">
+    <div class="panel-label"><span class="dot"></span>Outcomes</div>
+    
+    <div class="outcomes">
+
+      <div class="outcome success">
+        <div class="outcome-bar"></div>
+        <div class="outcome-head">
+          <div class="outcome-indicator"></div>
+          <div class="outcome-title">✅ Listing Successful</div>
+        </div>
+        <div class="outcome-body">
+          11 products are now live on Amazon Seller Central. Listings include all required attributes, images, and pricing. Products are immediately available in your inventory page.
+        </div>
+        <div class="outcome-chip">✓ View in Seller Central Inventory</div>
+      </div>
+
+      <div class="outcome error">
+        <div class="outcome-bar"></div>
+        <div class="outcome-head">
+          <div class="outcome-indicator"></div>
+          <div class="outcome-title">⚠️ Attention Required</div>
+        </div>
+        <div class="outcome-body">
+          1 product failed validation due to missing required attribute: 'brand'. The listing has been saved to drafts for manual review and correction.
+        </div>
+        <div class="outcome-chip">→ Review in Drafts Section</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

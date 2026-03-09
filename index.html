@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Amazon SP-API · Seller Chatbot</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&family=Raleway:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --amazon-orange:  #FF9900;
+  --amazon-orange2: #e68a00;
+  --squid-ink:      #131A22;
+  --bg-main:        #FFFFFF;
+  --bg-secondary:   #F7F8FA;
+  --bg-tertiary:    #FAFBFC;
+  --text-primary:   #131A22;
+  --text-secondary: #565959;
+  --text-dim:       #888888;
+  --border:         #E0E0E0;
+  --border-light:   #EEEEEE;
+  --green:          #067D62;
+  --red:            #D13212;
+  --blue:           #0073BB;
+  --purple:         #8B46FF;
+  --shadow:         rgba(0,0,0,0.08);
+  --shadow-lg:      rgba(0,0,0,0.12);
+}
+html,body{height:100%;overflow:hidden;}
+body{
+  background: var(--bg-main);
+  font-family: 'Source Sans 3', 'Amazon Ember', sans-serif;
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── HEADER ── */
+.header{
+  background: var(--squid-ink);
+  border-bottom: 3px solid var(--amazon-orange);
+  padding: 0 28px;
+  height: 56px;
+  display: flex; align-items: center; gap: 14px;
+  flex-shrink: 0;
+}
+.header-logo{display: flex; align-items: center; gap: 10px;}
+.header-logo .a-text{
+  font-family: 'Raleway', sans-serif;
+  font-size: 22px; font-weight: 800;
+  color: var(--amazon-orange);
+  letter-spacing: -0.02em;
+}
+.header-logo .a-smile{font-size: 13px; color: var(--amazon-orange);}
+.header-divider{width:1px;height:24px;background:rgba(255,255,255,0.2);}
+.header-title{
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 14px; font-weight: 400;
+  color: rgba(255,255,255,0.85);
+}
+.header-badge{
+  margin-left: auto;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 4px 11px; border-radius: 4px;
+  background: var(--amazon-orange);
+  color: var(--squid-ink);
+}
+
+/* ── GRID ── */
+.grid{
+  flex:1;
+  display:grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  overflow:hidden;
+  background: var(--bg-secondary);
+}
+.panel{
+  padding: 24px 22px 22px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  border-right: 2px solid var(--border-light);
+  background: var(--bg-main);
+  position: relative;
+}
+.panel:last-child{border-right: none;}
+.panel::before{
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(to right, transparent, rgba(255,153,0,0.3), transparent);
+}
+.panel-label{
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 8px;
+}
+.panel-label .dot{
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--amazon-orange);
+  box-shadow: 0 0 6px rgba(255,153,0,0.5);
+  animation: pulse 2.5s ease infinite;
+}
+
+/* ── COLUMN 1: CHAT ── */
+.robot-wrap{
+  display: flex; justify-content: center;
+  margin-bottom: 22px;
+  opacity: 0;
+  animation: fadeUp 0.5s ease 0.2s forwards;
+}
+.robot{
+  width: 80px; height: 80px;
+  background: linear-gradient(135deg, #FF9900 0%, #e68a00 100%);
+  border: 2px solid var(--amazon-orange);
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 38px;
+  position: relative;
+  box-shadow: 0 4px 12px var(--shadow);
+}
+.robot-status{
+  position: absolute; bottom: -4px; right: -4px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--green);
+  border: 3px solid var(--bg-main);
+  animation: pulse 2.5s ease infinite;
+}
+
+.chat-scroll{
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 4px;
+}
+.chat-scroll::-webkit-scrollbar{width: 5px;}
+.chat-scroll::-webkit-scrollbar-track{background: var(--bg-secondary);}
+.chat-scroll::-webkit-scrollbar-thumb{background: rgba(255,153,0,0.4); border-radius: 10px;}
+
+.bubble{
+  max-width: 82%;
+  padding: 12px 15px;
+  border-radius: 14px;
+  font-size: 13px; line-height: 1.6;
+  opacity: 0;
+  position: relative;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.bubble.user{
+  align-self: flex-end;
+  background: var(--amazon-orange);
+  color: var(--squid-ink);
+  border-bottom-right-radius: 4px;
+  animation: fadeLeft 0.35s ease forwards;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(255,153,0,0.25);
+}
+.bubble.bot{
+  align-self: flex-start;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+  animation: fadeRight 0.35s ease forwards;
+  color: var(--text-primary);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.typing{
+  align-self: flex-start;
+  display: flex; gap: 5px; align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 14px; border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.typing span{
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--amazon-orange);
+  animation: bounce 1s ease infinite;
+}
+.typing span:nth-child(2){ animation-delay: 0.15s; }
+.typing span:nth-child(3){ animation-delay: 0.3s; }
+
+/* ── CHAT INPUT AREA ── */
+.chat-input-area{
+  display: flex;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+.chat-input-area input{
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 13px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.chat-input-area input:focus{ border-color: var(--amazon-orange); }
+.chat-input-area input::placeholder{ color: var(--text-dim); }
+.chat-input-area input:disabled{ opacity: 0.6; }
+.chat-input-area button{
+  padding: 10px 18px;
+  background: var(--amazon-orange);
+  color: var(--squid-ink);
+  border: none;
+  border-radius: 10px;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, opacity 0.2s;
+}
+.chat-input-area button:hover:not(:disabled){ background: var(--amazon-orange2); }
+.chat-input-area button:disabled{ opacity: 0.5; cursor: not-allowed; }
+
+/* ── COLUMN 2: STEPS ── */
+.steps-container{
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding-right: 8px;
+}
+.steps-container::-webkit-scrollbar{width: 5px;}
+.steps-container::-webkit-scrollbar-track{background: var(--bg-secondary);}
+.steps-container::-webkit-scrollbar-thumb{background: rgba(255,153,0,0.4); border-radius: 10px;}
+
+.step-card{
+  background: var(--bg-main);
+  border-radius: 10px;
+  padding: 13px 15px;
+  border: 1.5px solid var(--border);
+  position: relative;
+  border-left: 4px solid transparent;
+  box-shadow: 0 2px 6px var(--shadow);
+}
+.step-card.thinking{
+  border-left-color: var(--purple);
+  background: linear-gradient(to right, rgba(139,70,255,0.03), var(--bg-main));
+}
+.step-card.auth{
+  border-left-color: var(--green);
+  background: linear-gradient(to right, rgba(6,125,98,0.03), var(--bg-main));
+}
+.step-card.api{
+  border-left-color: var(--blue);
+  background: linear-gradient(to right, rgba(0,115,187,0.03), var(--bg-main));
+}
+.step-card.success{
+  border-left-color: var(--green);
+  background: linear-gradient(to right, rgba(6,125,98,0.05), var(--bg-main));
+}
+.step-card.transform{
+  border-left-color: var(--blue);
+  background: linear-gradient(to right, rgba(0,115,187,0.04), var(--bg-main));
+}
+.step-card.complete{
+  border-left-color: var(--amazon-orange);
+  background: linear-gradient(to right, rgba(255,153,0,0.05), var(--bg-main));
+}
+.step-header{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.step-num{
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255,153,0,0.12);
+  border: 1px solid rgba(255,153,0,0.25);
+  color: var(--amazon-orange);
+  flex-shrink: 0;
+}
+.step-icon{ font-size: 18px; flex-shrink: 0; line-height: 1; }
+.step-type{
+  font-family: 'DM Mono', monospace;
+  font-size: 8px; font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.step-duration{
+  margin-left: auto;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+}
+.step-title{
+  font-size: 12px; font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.step-subtitle{
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.step-code{
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--amazon-orange);
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(255,153,0,0.06);
+  border: 1px solid rgba(255,153,0,0.12);
+  border-radius: 5px;
+  word-break: break-all;
+}
+
+/* ── COLUMN 3: OUTCOMES ── */
+.outcomes{
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  justify-content: flex-start;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.outcomes::-webkit-scrollbar{width: 5px;}
+.outcomes::-webkit-scrollbar-track{background: var(--bg-secondary);}
+.outcomes::-webkit-scrollbar-thumb{background: rgba(255,153,0,0.4); border-radius: 10px;}
+
+.outcome{
+  border-radius: 12px;
+  padding: 18px 18px 18px 22px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 3px 10px var(--shadow);
+  flex-shrink: 0;
+}
+.outcome.success{
+  background: rgba(6,125,98,0.06);
+  border: 2px solid rgba(6,125,98,0.25);
+}
+.outcome.error{
+  background: rgba(209,50,18,0.06);
+  border: 2px solid rgba(209,50,18,0.25);
+}
+.outcome-bar{
+  position: absolute; top: 0; left: 0; bottom: 0; width: 4px;
+  border-radius: 12px 0 0 12px;
+}
+.success .outcome-bar{ background: var(--green); }
+.error .outcome-bar{ background: var(--red); }
+.outcome-head{
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+}
+.outcome-indicator{
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.success .outcome-indicator{
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(6,125,98,0.6);
+  animation: pulse 2.5s ease infinite;
+}
+.error .outcome-indicator{
+  background: var(--red);
+  box-shadow: 0 0 6px rgba(209,50,18,0.6);
+  animation: pulse 2.5s ease 0.5s infinite;
+}
+.outcome-title{
+  font-family: 'Raleway', sans-serif;
+  font-size: 14px; font-weight: 700;
+  color: var(--text-primary);
+}
+.outcome-body{
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 11px;
+}
+.outcome-chip{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 5px;
+}
+.success .outcome-chip{
+  background: rgba(6,125,98,0.1);
+  border: 1px solid rgba(6,125,98,0.3);
+  color: var(--green);
+}
+.error .outcome-chip{
+  background: rgba(209,50,18,0.1);
+  border: 1px solid rgba(209,50,18,0.3);
+  color: var(--red);
+}
+
+/* ── EMPTY STATE ── */
+.empty-state{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-dim);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  text-align: center;
+  opacity: 0.6;
+}
+.empty-state .empty-icon{ font-size: 28px; opacity: 0.4; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeLeft{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeRight{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes stepIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.55;transform:scale(0.8)}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">
+    <span class="a-text">amazon</span>
+    <span class="a-smile">↗</span>
+  </div>
+  <div class="header-divider"></div>
+  <div class="header-title">SP-API MCP Server · Seller Central Integration</div>
+  <div class="header-badge">Live</div>
+</div>
+
+<!-- GRID -->
+<div class="grid">
+
+  <!-- COLUMN 1: CHAT -->
+  <div class="panel">
+    <div class="panel-label"><span class="dot"></span>User Prompt</div>
+
+    <div class="robot-wrap">
+      <div class="robot">
+        🤖
+        <div class="robot-status"></div>
+      </div>
+    </div>
+
+    <div class="chat-scroll" id="chatScroll">
+      <div class="empty-state" id="chatEmpty">
+        <span class="empty-icon">💬</span>
+        <span>Ask anything about your<br>Amazon seller account</span>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <input
+        type="text"
+        id="chatInput"
+        placeholder="e.g. Show my recent orders..."
+        autocomplete="off"
+      />
+      <button id="sendBtn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- COLUMN 2: AGENT OPERATIONS -->
+  <div class="panel">
+    <div class="panel-label"><span class="dot"></span>Agent Operations</div>
+    <div class="steps-container" id="stepsContainer">
+      <div class="empty-state" id="stepsEmpty">
+        <span class="empty-icon">⚙️</span>
+        <span>Agent steps will appear<br>here as Claude works</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLUMN 3: OUTCOMES -->
+  <div class="panel">
+    <div class="panel-label"><span class="dot"></span>Outcomes</div>
+    <div class="outcomes" id="outcomes">
+      <div class="empty-state" id="outcomesEmpty">
+        <span class="empty-icon">📊</span>
+        <span>API results and outcomes<br>will appear here</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────
+let jwtToken        = null;
+let isStreaming      = false;
+let currentBotBubble = null;
+let currentBotText   = '';
+let stepCounter      = 0;
+
+// ── INIT ───────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  // Auto-authenticate
+  try {
+    const resp = await fetch('/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'admin', password: 'changeme' })
+    });
+    if (!resp.ok) throw new Error(`Auth failed: ${resp.status}`);
+    const data = await resp.json();
+    jwtToken = data.token;
+  } catch (err) {
+    appendSystemMessage('⚠ Authentication failed — check backend is running');
+    console.error('Auto-auth error:', err);
+  }
+
+  // Enter key support
+  document.getElementById('chatInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+});
+
+// ── SEND MESSAGE ───────────────────────────────────────────────────────
+async function sendMessage() {
+  if (isStreaming) return;
+  if (!jwtToken) {
+    appendSystemMessage('⚠ Not authenticated — please refresh the page');
+    return;
+  }
+
+  const input = document.getElementById('chatInput');
+  const message = input.value.trim();
+  if (!message) return;
+
+  // Clear input & lock UI
+  input.value = '';
+  setInputLocked(true);
+  isStreaming = true;
+
+  // Reset per-turn state
+  stepCounter      = 0;
+  currentBotBubble = null;
+  currentBotText   = '';
+
+  // Clear columns 2 & 3 for new turn
+  clearProcessingColumns();
+  hideEmptyState('chatEmpty');
+
+  // Add user bubble
+  appendBubble('user', message);
+
+  // Show typing indicator
+  const typingEl = appendTypingIndicator();
+
+  try {
+    const resp = await fetch('/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`
+      },
+      body: JSON.stringify({ message })
+    });
+
+    if (!resp.ok) {
+      let detail = 'Unknown error';
+      try { detail = (await resp.json()).detail || detail; } catch {}
+      typingEl.remove();
+      appendBubble('bot', `Error ${resp.status}: ${detail}`);
+      setInputLocked(false);
+      isStreaming = false;
+      return;
+    }
+
+    // Parse SSE stream
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE messages are separated by double newlines
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop(); // keep incomplete tail
+
+      for (const part of parts) {
+        const line = part.trim();
+        if (!line.startsWith('data: ')) continue;
+        const jsonStr = line.slice(6).trim();
+        if (!jsonStr) continue;
+        try {
+          const event = JSON.parse(jsonStr);
+          handleSSEEvent(event, typingEl);
+        } catch {
+          // ignore malformed JSON
+        }
+      }
+    }
+
+    // Handle any remaining buffer
+    if (buffer.trim().startsWith('data: ')) {
+      try {
+        const event = JSON.parse(buffer.trim().slice(6));
+        handleSSEEvent(event, typingEl);
+      } catch {}
+    }
+
+  } catch (err) {
+    typingEl.remove();
+    appendBubble('bot', `Connection error: ${err.message}`);
+    console.error('Stream error:', err);
+  }
+
+  setInputLocked(false);
+  isStreaming = false;
+}
+
+// ── SSE EVENT DISPATCHER ───────────────────────────────────────────────
+function handleSSEEvent(event, typingEl) {
+  switch (event.type) {
+
+    case 'step':
+      appendStepCard(event);
+      break;
+
+    case 'message_chunk':
+      // First chunk: remove typing indicator, create streaming bubble
+      if (!currentBotBubble) {
+        safeRemove(typingEl);
+        currentBotBubble = appendBubble('bot', '');
+      }
+      currentBotText += event.content;
+      currentBotBubble.textContent = currentBotText;
+      scrollChat();
+      break;
+
+    case 'outcome':
+      appendOutcomeCard(event);
+      break;
+
+    case 'error':
+      safeRemove(typingEl);
+      if (!currentBotBubble) {
+        appendBubble('bot', `Error: ${event.message}`);
+      }
+      break;
+
+    case 'done':
+      safeRemove(typingEl);
+      break;
+  }
+}
+
+// ── DOM BUILDERS ───────────────────────────────────────────────────────
+function appendBubble(role, text) {
+  const chatScroll = document.getElementById('chatScroll');
+  const div = document.createElement('div');
+  div.className = `bubble ${role}`;
+  div.textContent = text;
+  chatScroll.appendChild(div);
+  scrollChat();
+  return div;
+}
+
+function appendTypingIndicator() {
+  const chatScroll = document.getElementById('chatScroll');
+  const div = document.createElement('div');
+  div.className = 'typing';
+  div.style.animation = 'fadeRight 0.3s ease forwards';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  chatScroll.appendChild(div);
+  scrollChat();
+  return div;
+}
+
+function appendStepCard(event) {
+  // event: { num, icon, stepType, title, subtitle, code, duration }
+  const container = document.getElementById('stepsContainer');
+  hideEmptyState('stepsEmpty');
+
+  const card = document.createElement('div');
+  card.className = `step-card ${event.stepType || 'thinking'}`;
+  card.style.animation = 'stepIn 0.4s ease forwards';
+
+  const codeHTML = event.code
+    ? `<div class="step-code">${escapeHTML(event.code)}</div>`
+    : '';
+
+  const subtitleHTML = escapeHTML(event.subtitle || '').replace(/\n/g, '<br>');
+
+  card.innerHTML = `
+    <div class="step-header">
+      <span class="step-num">#${event.num}</span>
+      <span class="step-icon">${event.icon || ''}</span>
+      <span class="step-type">${escapeHTML(event.stepType || '')}</span>
+      <span class="step-duration">${escapeHTML(event.duration || '')}</span>
+    </div>
+    <div class="step-title">${escapeHTML(event.title || '')}</div>
+    <div class="step-subtitle">${subtitleHTML}</div>
+    ${codeHTML}
+  `;
+
+  container.appendChild(card);
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function appendOutcomeCard(event) {
+  // event: { status, title, body, chip }
+  const container = document.getElementById('outcomes');
+  hideEmptyState('outcomesEmpty');
+
+  const card = document.createElement('div');
+  card.className = `outcome ${event.status || 'success'}`;
+  card.style.animation = 'slideIn 0.5s ease forwards';
+
+  card.innerHTML = `
+    <div class="outcome-bar"></div>
+    <div class="outcome-head">
+      <div class="outcome-indicator"></div>
+      <div class="outcome-title">${escapeHTML(event.title || '')}</div>
+    </div>
+    <div class="outcome-body">${escapeHTML(event.body || '')}</div>
+    <div class="outcome-chip">${escapeHTML(event.chip || '')}</div>
+  `;
+
+  container.appendChild(card);
+}
+
+function appendSystemMessage(text) {
+  const chatScroll = document.getElementById('chatScroll');
+  hideEmptyState('chatEmpty');
+  const div = document.createElement('div');
+  div.style.cssText = `
+    font-size: 11px; color: var(--text-dim);
+    text-align: center; padding: 8px 4px;
+    font-family: 'DM Mono', monospace;
+    align-self: center;
+  `;
+  div.textContent = text;
+  chatScroll.appendChild(div);
+  scrollChat();
+}
+
+// ── UTILITIES ──────────────────────────────────────────────────────────
+function clearProcessingColumns() {
+  const stepsEl    = document.getElementById('stepsContainer');
+  const outcomesEl = document.getElementById('outcomes');
+  stepsEl.innerHTML    = '';
+  outcomesEl.innerHTML = '';
+
+  // Re-add empty states
+  addEmptyState('stepsEmpty', stepsEl, '⚙️', 'Agent steps will appear\nhere as Claude works');
+  addEmptyState('outcomesEmpty', outcomesEl, '📊', 'API results and outcomes\nwill appear here');
+}
+
+function addEmptyState(id, container, icon, text) {
+  const div = document.createElement('div');
+  div.className = 'empty-state';
+  div.id = id;
+  const lines = text.split('\n').join('<br>');
+  div.innerHTML = `<span class="empty-icon">${icon}</span><span>${lines}</span>`;
+  container.appendChild(div);
+}
+
+function hideEmptyState(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function scrollChat() {
+  const chatScroll = document.getElementById('chatScroll');
+  chatScroll.scrollTop = chatScroll.scrollHeight;
+}
+
+function setInputLocked(locked) {
+  const input = document.getElementById('chatInput');
+  const btn   = document.getElementById('sendBtn');
+  input.disabled = locked;
+  btn.disabled   = locked;
+  if (!locked) input.focus();
+}
+
+function safeRemove(el) {
+  if (el && el.parentNode) el.remove();
+}
+
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(String(str)));
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>
